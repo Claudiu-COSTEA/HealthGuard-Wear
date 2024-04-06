@@ -7,7 +7,7 @@
    * pip
      - django
      - djangorestframework
-     - psycopg3
+     - psycopg2
 2. psql
 
 ### How to run?
