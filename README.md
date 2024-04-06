@@ -6,6 +6,7 @@
 1. python3.10+
 2. pip
 3. psql
+4. npm
 
 ### How to run? [Backend server]
 - In project root path:
@@ -22,3 +23,11 @@
 ```
   
 - Visit [localhost:8000](http://localhost:8000/)
+
+### How to run? [React Frontend server]
+- In `/frontend` path:
+```
+>> npm run dev
+```
+
+- Visit [localhost:5173](http://localhost:5173/)
