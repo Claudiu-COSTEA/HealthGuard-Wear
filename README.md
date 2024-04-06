@@ -2,15 +2,23 @@
 
 ## Server
 
-### Prerequisites
+### Prerequisites to install
 1. python3.10+
-   * pip
-     - django
-     - djangorestframework
-     - psycopg2
-2. psql
+2. pip
+3. psql
 
-### How to run?
-- Make sure to be inside `/backend/healthguard`
-- Run `python3 manage.py runserver`
+### How to run? [Backend server]
+- In project root path:
+```
+>> python3 -m venv env
+>> source env/bin/activate [linux]
+>> ./env/Scripts/activate [windows] 
+```
+
+- In `/backend` path:
+```
+>> pip install -r requirements.txt
+>> python manage.py runserver
+```
+  
 - Visit [localhost:8000](http://localhost:8000/)
