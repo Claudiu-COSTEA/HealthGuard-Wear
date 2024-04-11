@@ -1,7 +1,8 @@
 from django.shortcuts import render
-from django.contrib.auth.models import User
+# from django.contrib.auth.models import User
+from .models import User, MedicProfile
 from rest_framework import generics
-from .serializers import UserSerializer
+from .serializers import UserSerializer, MedicProfileSerializer
 from rest_framework.permissions import IsAuthenticated, AllowAny
 
 class CreateUserView(generics.CreateAPIView):
@@ -19,3 +20,8 @@ class UpdateUserView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = UserSerializer
     permission_classes = [AllowAny]
     lookup_field = 'pk'
+
+class CreateMedicProfileView(generics.CreateAPIView):
+    queryset = MedicProfile.objects.all()
+    serializer_class = MedicProfileSerializer
+    permission_classes = [AllowAny]
