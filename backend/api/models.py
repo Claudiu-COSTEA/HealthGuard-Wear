@@ -86,6 +86,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     phone_number = models.CharField(max_length=100, blank=True, default='')
 
     medic_profile = models.OneToOneField(MedicProfile, on_delete=models.CASCADE, null=True, blank=True)
+    pacient_profile = models.OneToOneField(PacientProfile, on_delete=models.CASCADE, null=True, blank=True)
 
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)

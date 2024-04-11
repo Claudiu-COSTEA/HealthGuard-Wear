@@ -1,11 +1,11 @@
 # from django.contrib.auth.models import User
 from rest_framework import serializers
-from .models import User, MedicProfile
+from .models import User, MedicProfile, PacientProfile
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ["id", "email", "first_name", "last_name", "phone_number", "password", "medic_profile"]
+        fields = ["id", "email", "first_name", "last_name", "phone_number", "password", "medic_profile", "pacient_profile"]
         extra_kwargs = {"password": {"write_only": True}}
 
     def create(self, validated_data):
@@ -21,3 +21,11 @@ class MedicProfileSerializer(serializers.ModelSerializer):
         medic_profle = MedicProfile.objects.create(**validated_data)
         return medic_profle
     
+class PacientProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PacientProfile
+        fields = ["id", "cnp", "age", "profession", "work_place", "allergies", "address", "activity_type"]
+
+    def create(self, validated_data):
+        pacient_profile = PacientProfile.objects.create(**validated_data)
+        return pacient_profile
