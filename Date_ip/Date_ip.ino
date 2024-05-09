@@ -2,87 +2,65 @@
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
 
+#define AD8232_PIN A0
+#define DHTPIN 2
+#define DHTTYPE DHT11
+#define MSG_BUFFER_SIZE	(150)
+#define MSG_SEC	(50)
+
+DHT dht(DHTPIN, DHTTYPE);
+
 const char* ssid = "LinksysB019";
 const char* password = "wm83y3fby4";
 const char* mqtt_server = "test.mosquitto.org";
 
-#define MSG_BUFFER_SIZE	(50)
-#define DHTPIN 2 //defines what digital pin is used by sensor
-#define DHTTYPE DHT11 //tells the arduino that we are using a dht11 and not a dht22
-
 WiFiClient espClient;
 PubSubClient client(espClient);
 
-char msg[MSG_BUFFER_SIZE];
+unsigned long previousMillis5 = 0; 
+unsigned long previousMillis30 = 0;  
+unsigned long previousMillis60 = 0;  
+
+const long interval = 1000;  
+
+typedef struct Date{
+
+ int ecgValori[20];
+ int puls;
+ float temperatura;
+ float umiditate;
+}Date;
+
+Date date;
+
+
+char msg[MSG_SEC];
+char msg1[MSG_BUFFER_SIZE];
 float valoriTemp = 0;
 int numarValoriTemp = 0;
 float valoriUmid = 0;
 int numarValoriUmid = 0;
 
-int iduser = 1111;
+void getEcgPuls() {
+  int numar_pulsuri = 0;
+  int val_puls = 0;
 
-volatile bool flag30s = false; // Variabilă pentru a indica întreruperea la 30 de secunde
-volatile bool flag5s = false; // Variabilă pentru a indica întreruperea la 5 secunde
-volatile bool flag60s = false; // Variabilă pentru a indica întreruperea la 60 de secunde
+  if ((digitalRead(4) == 1) || (digitalRead(0) == 1)) {
+    Serial.println('!');
+  } else {
+    unsigned long startTime = millis(); 
+    unsigned long duration = 10000;
 
-typedef struct {
+    while (millis() - startTime < duration && numar_pulsuri < 20) {
+      date.ecgValori[numar_pulsuri] = analogRead(AD8232_PIN);
+      numar_pulsuri++;
+    }
 
-  String ecg[30];
-  int puls;
-  float temperatura;
-  int umiditate;
-}Date;
-
-Date date;
-
-void getEcgPuls(){
-
-if((digitalRead(4) == 1)||(digitalRead(0) == 1))
-{
-  Serial.println('!');
-}
-else
-{
-
-    unsigned long startTime = millis(); // Momentul de start al buclei
-    unsigned long duration = 10000;     // Durata de așteptare în milisecunde (10 secunde)
-    int i = 0;
-
-    while (millis() - startTime < duration) {
-      date.ecg[i] = String(analogRead(A0));
-      i++;
-}
-
-date.ecg[i] = '\0';
-date.puls = 0;
-
-}
-delay(10);
-}
-
-void setup_wifi() {
-
-  delay(10);
-  // We start by connecting to a WiFi network
-  Serial.println();
-  Serial.print("Connecting to ");
-  Serial.println(ssid);
-
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);
-
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
+    numar_pulsuri = 0;
   }
-
-  randomSeed(micros());
-
-  Serial.println("");
-  Serial.println("WiFi connected");
-  Serial.println("IP address: ");
-  Serial.println(WiFi.localIP());
+  delay(10);
 }
+
 
 void callback(char* topic, byte* payload, unsigned int length) {
   Serial.print("Message arrived [");
@@ -92,16 +70,6 @@ void callback(char* topic, byte* payload, unsigned int length) {
     Serial.print((char)payload[i]);
   }
   Serial.println();
-
-  // // Switch on the LED if an 1 was received as first character
-  // if ((char)payload[0] == '1') {
-  //   digitalWrite(BUILTIN_LED, LOW);   // Turn the LED on (Note that LOW is the voltage level
-  //   // but actually the LED is on; this is because
-  //   // it is active low on the ESP-01)
-  // } else {
-  //   digitalWrite(BUILTIN_LED, HIGH);  // Turn the LED off by making the voltage HIGH
-  // }
-
 }
 
 void reconnect() {
@@ -128,33 +96,41 @@ void reconnect() {
   }
 }
 
+void setup_wifi() {
+  delay(10);
+  Serial.println();
+  Serial.print("Connecting to ");
+  Serial.println(ssid);
+
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  randomSeed(micros());
+
+  Serial.println("");
+  Serial.println("WiFi connected");
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
+}
+
 void setup() {
-  //pinMode(BUILTIN_LED, OUTPUT);     // Initialize the BUILTIN_LED pin as an output
   Serial.begin(115200);
+
+  client.setServer(mqtt_server, 1883);
+  client.setCallback(callback);
+  pinMode(BUILTIN_LED, OUTPUT);
+
   pinMode(4, INPUT);
   pinMode(0, INPUT);
   setup_wifi();
-  client.setServer(mqtt_server, 1883);
-  client.setCallback(callback);
+  dht.begin();
 
-   // Configurare temporizator Timer1 pentru întrerupere la fiecare 30 de secunde
-TCCR1A = 0; // Configurare Timer1 în modul normal
-TCCR1B = (1 << WGM12) | (1 << CS11) | (1 << CS10); // Prescaler 64, CTC mode
-OCR1A = 46875; // Valoare pentru declanșarea întreruperii la fiecare 30 de secunde
-TIMSK1 |= (1 << OCIE1A); // Activează întreruperea la comparație cu OCR1A
-
-// Configurare temporizator Timer2 pentru întrerupere la fiecare 5 secunde
-TCCR2A = 0; // Configurare Timer2 în modul normal
-TCCR2B = (1 << CS22); // Prescaler 64
-OCR2A = 156; // Valoare pentru declanșarea întreruperii la fiecare 5 secunde
-TIMSK2 |= (1 << OCIE2A); // Activează întreruperea la comparație cu OCR2A
-
-// Configurare temporizator Timer3 pentru întrerupere la fiecare 60 de secunde
-TCCR3A = 0; // Configurare Timer3 în modul normal
-TCCR3B = (1 << WGM32) | (1 << CS32) | (1 << CS30); // Prescaler 1024, CTC mode
-OCR3A = 46875; // Valoare pentru declanșarea întreruperii la fiecare 60 de secunde
-TIMSK3 |= (1 << OCIE3A); // Activează întreruperea la comparație cu OCR3A
-
+  
 }
 
 void loop() {
@@ -164,48 +140,53 @@ void loop() {
   }
   client.loop();
 
+  unsigned long currentMillis = millis();
 
-  if (flag30s) {
-    Serial.println("Intrerupere la 30 de secunde!");
-    flag30s = false; // Resetează flag-ul
+  if (currentMillis - previousMillis5 >= interval * 2 ) {
+    
+   // date.ecgValoare = analogRead(AD8232_PIN);
+    float temperature = dht.readTemperature();
+    date.temperatura = dht.readTemperature();
+    float humidity = dht.readHumidity();
+    date.umiditate = dht.readHumidity();
+
+    previousMillis5 = currentMillis;
   }
+
+  if (currentMillis - previousMillis30 >= interval * 5) {
+   
+    getEcgPuls();
+    int ecgValue = analogRead(AD8232_PIN);
+
+    previousMillis30 = currentMillis;
+  }
+
+  if (currentMillis - previousMillis60 >= interval * 10) {
+    
+    strcat(msg1, "1");
+    strcat(msg1, " - ");
+    char msgE[6];
+    for(int i = 0; i < 20; i++)
+    {
+      //Serial.println(date.ecgValori[i]);
+       itoa(date.ecgValori[i], msgE, 6);
+       strcat(msg1, msgE);
+       strcat(msg1, " ");
+    }
+
+    snprintf (msg, 50, "- %d - %.2f - %.2f", date.puls,date.temperatura, date.umiditate);
+
+    Serial.println();
+
+    strcat(msg1, msg);
+    Serial.print("Publish message: ");
+    Serial.println(msg1);
+    client.publish("Valori", msg1);
+
+    strcpy(msg1, "");
+    previousMillis60 = currentMillis;
+  }
+
+  delay(1000);
   
-  if (flag5s) {
-    Serial.println("Intrerupere la 5 secunde!");
-    flag5s = false; // Resetează flag-ul
-  }
-  
-  if (flag60s) {
-    Serial.println("Intrerupere la 60 de secunde!");
-    flag60s = false; // Resetează flag-ul
-  }
-}
-
-
-// Funcția de întrerupere pentru temporizatorul Timer1 (30 de secunde)
-ISR(TIMER1_COMPA_vect) {
-  flag30s = true; // Setează flag-ul pentru a indica întreruperea la 30 de secunde
-  getEcgPuls();
-}
-
-// Funcția de întrerupere pentru temporizatorul Timer2 (5 secunde)
-ISR(TIMER2_COMPA_vect) {
-  flag5s = true; // Setează flag-ul pentru a indica întreruperea la 5 secunde
-  valoriTemp+=dht.readTemperature();
-  numarValoriTemp++;
-  valoriUmid+=(int)dht.readHumidity();
-  umarValoriUmid++;
-}
-
-// Funcția de întrerupere pentru temporizatorul Timer3 (60 de secunde)
-ISR(TIMER3_COMPA_vect) {
-  flag60s = true; // Setează flag-ul pentru a indica întreruperea la 60 de secunde
-  date.temperatura = float(valoriTemp/numarValoriTemp);
-  date.umiditate = float(valoriUmid/numarValoriUmid);
-
-  snprintf(msg, MSG_BUFFER_SIZE, "%d-%.2f-%d-%d-%s", 1111, date.temperatura, date.umiditate, date.puls, date.ecg);
-
-  Serial.print("Publish message: ");
-  Serial.println(msg);
-  client.publish("Valori", msg);
 }

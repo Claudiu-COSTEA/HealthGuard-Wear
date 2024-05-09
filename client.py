@@ -11,6 +11,8 @@ graphql_url = 'https://healthguard-api.fly.dev/api/graphql'
 # Definim numele subiectului pentru comunicare
 topic = "Valori"
 
+OK = False
+
 # Callback-ul care se apelează atunci când primim un mesaj
 def on_message(client, userdata, message):
    
@@ -19,12 +21,12 @@ def on_message(client, userdata, message):
     parts = valori.split("-")
     print(parts)
 
-    id_utilizator = int(parts[0])  # First part as an integer
-    temperatura = float(parts[1])  # Second part as a float
-    umiditate = int(parts[2])  # Third part as an integer
-    puls = int(parts[3])  # Fourth part as an integer
+    id_utilizator = 1  # First part as an integer
+    temperatura = float(parts[2])  # Second part as a float
+    umiditate = float(parts[3])  # Third part as an integer
+    puls = int(parts[1])  # Fourth part as an integer
 
-    ecg_valori = parts[4].split()
+    ecg_valori = parts[0].split()
     vector = [int(x) for x in ecg_valori]  # Remaining parts as integers in a list
 
     print("ID utilizator:", id_utilizator)
@@ -32,6 +34,7 @@ def on_message(client, userdata, message):
     print("Umiditate:", umiditate)
     print("Puls:", puls)
     print("ECG:", vector)
+    OK = True
 
         # Define your GraphQL mutation query with variables
     mutation_query = '''
@@ -70,8 +73,10 @@ def on_message(client, userdata, message):
         "humidity": umiditate,
         "ecg": vector
     }
-    # Send the GraphQL mutation as a POST request
-    response = requests.post(graphql_url, json={'query': mutation_query, 'variables': {'input': input_data}})
+    if OK is True:
+        # Send the GraphQL mutation as a POST request
+        response = requests.post(graphql_url, json={'query': mutation_query, 'variables': {'input': input_data}})
+        OK = False
 
 # Creăm un client MQTT
 client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
