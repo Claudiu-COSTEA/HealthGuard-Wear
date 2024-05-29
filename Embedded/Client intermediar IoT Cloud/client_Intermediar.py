@@ -7,12 +7,8 @@ broker_address = "test.mosquitto.org"
 port = 1883
 
 # Define the GraphQL endpoint URL
-#graphql_url = 'https://healthguard-api.fly.dev/api/graphql'
-graphql_url = 'http://localhost:4000/api/graphql'
-
-# Define your username and password for Basic Authentication
-username = 'admin'
-password = 'admin'
+graphql_url = 'https://healthguard-api.fly.dev/api/graphql'
+#graphql_url = 'http://localhost:4000/api/graphql'
 
 # Definim numele subiectului pentru comunicare
 topic = "Valori"
@@ -27,7 +23,7 @@ def on_message(client, userdata, message):
     parts = valori.split("-")
     print(parts)
 
-    id_utilizator = 3  # First part as an integer
+    id_utilizator =  4 # First part as an integer
     temperatura = float(parts[2])  # Second part as a float
     umiditate = float(parts[3])  # Third part as a float
     puls = float(parts[1])  # Fourth part as an integer
@@ -54,31 +50,22 @@ def on_message(client, userdata, message):
   }
 }
     '''
-    # Define the input data for the mutation
-    input_data = {
-        "userId": id_utilizator,
-        "bpm": puls,
-        "temperature": temperatura,
-        "humidity": umiditate,
-        "ecg": vector
-    }
 
     if OK:
         # Send the GraphQL mutation as a POST request with Basic Authentication
         response = requests.post(
             graphql_url,'',
-            json={'query': mutation_query, 'variables': {"id": id_utilizator, "bpm": puls, "temperature": temperatura, "humidity": umiditate, "ecg":vector}},
-            auth=HTTPBasicAuth(username, password)
+            json={'query': mutation_query, 'variables': {"id": id_utilizator, "bpm": puls, "temperature": temperatura, "humidity": umiditate, "ecg":vector}}
         )
         OK = False
 
         # Check if the request was successful
         if response.status_code == 200:
             print("Message sent successfully.")
-            #print(response.content)
+            print(response.content)
         else:
             print(f"Failed to send message. Status code: {response.status_code}, Response: {response.text}")
-            #print(response.content)
+            print(response.content)
 
 # Creăm un client MQTT
 client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)

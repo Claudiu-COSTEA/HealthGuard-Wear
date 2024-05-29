@@ -11,8 +11,8 @@
 
 DHT dht(DHTPIN, DHTTYPE);
 
-const char* ssid = "DIGI-N4bE";
-const char* password = "kXHKfZeUCs";
+const char* ssid = "HUAWEI_E5576_5B85";
+const char* password = "ET4NNA12T3D";
 const char* mqtt_server = "test.mosquitto.org";
 
 WiFiClient espClient;
@@ -208,7 +208,7 @@ void loop() {
     previousMillis30 = currentMillis;
   }
 
-  if (currentMillis - previousMillis60 >= interval * 10) {
+  if (currentMillis - previousMillis60 >= interval * 30) {
 
     char msgE[6];
     for (int i = 0; i < 20; i++) {
